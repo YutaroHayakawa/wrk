@@ -3,6 +3,10 @@
 #include "wrk.h"
 #include "script.h"
 #include "main.h"
+#include <arpa/inet.h>
+#include <sys/types.h>
+
+#include "extention.h"
 
 static struct config {
     uint64_t connections;
@@ -240,6 +244,10 @@ static int connect_socket(thread *thread, connection *c) {
 
     fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
 
+    if (extention_bind(fd) < 0) {
+      goto error;
+    }
+
     flags = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
@@ -474,6 +482,7 @@ static struct option longopts[] = {
     { "header",      required_argument, NULL, 'H' },
     { "latency",     no_argument,       NULL, 'L' },
     { "timeout",     required_argument, NULL, 'T' },
+    { "bind",        required_argument, NULL, 'b' }, // extention
     { "help",        no_argument,       NULL, 'h' },
     { "version",     no_argument,       NULL, 'v' },
     { NULL,          0,                 NULL,  0  }
@@ -489,7 +498,7 @@ static int parse_args(struct config *cfg, char **url, struct http_parser_url *pa
     cfg->duration    = 10;
     cfg->timeout     = SOCKET_TIMEOUT_MS;
 
-    while ((c = getopt_long(argc, argv, "t:c:d:s:H:T:Lrv?", longopts, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "t:c:d:s:H:T:b:Lrv?", longopts, NULL)) != -1) {
         switch (c) {
             case 't':
                 if (scan_metric(optarg, &cfg->threads)) return -1;
@@ -512,6 +521,11 @@ static int parse_args(struct config *cfg, char **url, struct http_parser_url *pa
             case 'T':
                 if (scan_time(optarg, &cfg->timeout)) return -1;
                 cfg->timeout *= 1000;
+                break;
+            /* extention */
+            case 'b':
+                bind_addr = optarg;
+                printf("bind to %s\n", bind_addr);
                 break;
             case 'v':
                 printf("wrk %s [%s] ", VERSION, aeGetApiName());

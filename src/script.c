@@ -6,6 +6,8 @@
 #include "http_parser.h"
 #include "zmalloc.h"
 
+#include "extention.h"
+
 typedef struct {
     char *name;
     int   type;
@@ -467,6 +469,10 @@ static int script_wrk_connect(lua_State *L) {
     struct addrinfo *addr = checkaddr(L);
     int fd, connected = 0;
     if ((fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol)) != -1) {
+        if (extention_bind(fd) < 0) {
+          perror("bind");
+          exit(EXIT_FAILURE);
+        }
         connected = connect(fd, addr->ai_addr, addr->ai_addrlen) == 0;
         close(fd);
     }

@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <stdlib.h>
 
 #include "net.h"
 
